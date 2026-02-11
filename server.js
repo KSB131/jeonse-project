@@ -870,6 +870,10 @@ async function computeMlRiskOnce(PORT) {
 
   const py = spawn("python", ["ml/predict.py"], { stdio: ["pipe", "pipe", "pipe"] });
 
+  py.on("error", (e) => {
+  console.warn("[PY SPAWN ERROR]", e.message);
+});
+
   let out = "";
   let err = "";
 
