@@ -892,17 +892,33 @@ async function fetchRealPriceTop({
 }
 
 async function fetchDataset() {
-  const url = `/api/ml-risk?maxPages=30&maxItems=800`;
-  const resp = await fetch(url);
+  const CACHE_KEY = "ML_RISK_DATASET_V1";
 
+  // 1) 세션 캐시 있으면 서버 호출 X
+  try {
+    const cached = sessionStorage.getItem(CACHE_KEY);
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch {}
+
+  // 2) 서버 1회 호출
+  const resp = await fetch(`/api/ml-risk`);
   const text = await resp.text();
   if (!resp.ok) {
     throw new Error(`HTTP ${resp.status} ${resp.statusText}\n${text.slice(0, 200)}`);
   }
 
   const data = JSON.parse(text);
-  return Array.isArray(data.items) ? data.items : [];
+  const items = Array.isArray(data.items) ? data.items : [];
+
+  // 3) 세션에 저장
+  try { sessionStorage.setItem(CACHE_KEY, JSON.stringify(items)); } catch {}
+
+  return items;
 }
+
 
 async function fetchRtmsCompare() {
   const resp = await fetch(`/api/rtms-compare?lawdCd=29140&fromYmd=202602&maxBack=12`);
@@ -1598,6 +1614,16 @@ function scheduleRerenderByMapMove() {
     renderByCurrentFilter();
   }, 250);
 }
+
+let __IDLE_TIMER = null;
+kakao.maps.event.addListener(map, "idle", () => {
+  if (__SUPPRESS_IDLE_RERENDER) return;
+  clearTimeout(__IDLE_TIMER);
+  __IDLE_TIMER = setTimeout(() => {
+    // ✅ 여기서는 "필터/마커 재렌더"만 (데이터 fetch는 이미 캐시에 있음)
+    renderByCurrentFilter();
+  }, 200);
+});
 
 // ✅ Kakao map: 드래그/줌 후 최종 상태에서 한번만 뜨는 이벤트
 kakao.maps.event.addListener(map, "idle", scheduleRerenderByMapMove);

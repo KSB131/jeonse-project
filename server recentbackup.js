@@ -10,6 +10,7 @@ import { createRequire } from "module";
 import axios from "axios";
 import { JSDOM } from "jsdom";
 import { Readability } from "@mozilla/readability";
+import crypto from "crypto";
 
 const require = createRequire(import.meta.url);
 
@@ -49,8 +50,207 @@ app.get("/chat", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "chat.html"));
 });
 
+app.get("/signup", (req,res) => res.sendFile(path.join(__dirname, "public", "signup.html")));
+app.get("/forgot", (req,res) => res.sendFile(path.join(__dirname, "public", "forgot.html")));
+
+
 // server.js (추가)
 app.use(express.json({ limit: "1mb" }));
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// ✅ 매우 단순한 쿠키 기반 세션(데모)
+const SESSIONS = new Map(); // sid -> { userId, createdAt }
+const COOKIE_NAME = "sid";
+
+function parseCookies(req){
+  const raw = req.headers.cookie || "";
+  const out = {};
+  raw.split(";").forEach(p => {
+    const [k, ...v] = p.trim().split("=");
+    if(!k) return;
+    out[k] = decodeURIComponent(v.join("=") || "");
+  });
+  return out;
+}
+function setCookie(res, name, value){
+  // httpOnly + sameSite 최소
+  res.setHeader("Set-Cookie", `${name}=${encodeURIComponent(value)}; Path=/; HttpOnly; SameSite=Lax`);
+}
+function clearCookie(res, name){
+  res.setHeader("Set-Cookie", `${name}=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax`);
+}
+
+const USERS_PATH = path.join(__dirname, "data", "users.json");
+fs.mkdirSync(path.dirname(USERS_PATH), { recursive: true });
+
+function readUsers(){
+  try{
+    const txt = fs.readFileSync(USERS_PATH, "utf-8");
+    return JSON.parse(txt || "[]");
+  }catch{
+    return [];
+  }
+}
+function writeUsers(users){
+  fs.writeFileSync(USERS_PATH, JSON.stringify(users, null, 2), "utf-8");
+}
+
+function hashPassword(pw, salt){
+  // scrypt로 간단 해시
+  const key = crypto.scryptSync(pw, salt, 32);
+  return key.toString("hex");
+}
+
+function newId(){
+  return crypto.randomBytes(16).toString("hex");
+}
+
+function getSessionUser(req){
+  const cookies = parseCookies(req);
+  const sid = cookies[COOKIE_NAME];
+  if(!sid) return null;
+
+  const sess = SESSIONS.get(sid);
+  if(!sess) return null;
+
+  const users = readUsers();
+  return users.find(u => u.id === sess.userId) || null;
+}
+
+app.get("/api/auth/me", (req, res) => {
+  const u = getSessionUser(req);
+  if(!u) return res.json({ ok:true, user:null });
+  res.json({ ok:true, user: { id:u.id, email:u.email, name:u.name, provider:u.provider || "local" } });
+});
+
+app.post("/api/auth/register", (req, res) => {
+  const { name, email, password } = req.body || {};
+  if(!name || !email || !password) return res.status(400).json({ ok:false, message:"필수값 누락" });
+  if(String(password).length < 6) return res.status(400).json({ ok:false, message:"비밀번호는 6자 이상" });
+
+  const users = readUsers();
+  const exists = users.some(u => u.email.toLowerCase() === String(email).toLowerCase());
+  if(exists) return res.status(409).json({ ok:false, message:"이미 가입된 이메일입니다" });
+
+  const salt = crypto.randomBytes(16).toString("hex");
+  const user = {
+    id: newId(),
+    name: String(name).trim(),
+    email: String(email).trim().toLowerCase(),
+    salt,
+    passwordHash: hashPassword(String(password), salt),
+    provider: "local",
+    createdAt: new Date().toISOString(),
+  };
+  users.push(user);
+  writeUsers(users);
+
+  // ✅ 자동 로그인
+  const sid = newId();
+  SESSIONS.set(sid, { userId: user.id, createdAt: Date.now() });
+  setCookie(res, COOKIE_NAME, sid);
+
+  res.json({ ok:true });
+});
+
+app.post("/api/auth/login", (req, res) => {
+  const { email, password } = req.body || {};
+  if(!email || !password) return res.status(400).json({ ok:false, message:"이메일/비밀번호를 입력해 주세요" });
+
+  const users = readUsers();
+  const u = users.find(x => x.email === String(email).trim().toLowerCase());
+  if(!u) return res.status(401).json({ ok:false, message:"이메일 또는 비밀번호가 올바르지 않습니다" });
+
+  const h = hashPassword(String(password), u.salt);
+  if(h !== u.passwordHash) return res.status(401).json({ ok:false, message:"이메일 또는 비밀번호가 올바르지 않습니다" });
+
+  const sid = newId();
+  SESSIONS.set(sid, { userId: u.id, createdAt: Date.now() });
+  setCookie(res, COOKIE_NAME, sid);
+  res.json({ ok:true });
+});
+
+app.post("/api/auth/logout", (req, res) => {
+  const cookies = parseCookies(req);
+  const sid = cookies[COOKIE_NAME];
+  if(sid) SESSIONS.delete(sid);
+  clearCookie(res, COOKIE_NAME);
+  res.json({ ok:true });
+});
+
+// ✅ 비밀번호 찾기(데모: 임시 비밀번호를 생성해서 저장 + 응답으로도 반환)
+app.post("/api/auth/forgot", (req, res) => {
+  const { email } = req.body || {};
+  if(!email) return res.status(400).json({ ok:false, message:"이메일을 입력해 주세요" });
+
+  const users = readUsers();
+  const u = users.find(x => x.email === String(email).trim().toLowerCase());
+  if(!u) return res.status(404).json({ ok:false, message:"해당 이메일로 가입된 계정이 없습니다" });
+
+  const tempPassword = Math.random().toString(36).slice(2, 10); // 8자리
+  u.salt = crypto.randomBytes(16).toString("hex");
+  u.passwordHash = hashPassword(tempPassword, u.salt);
+  writeUsers(users);
+
+  // 실제 서비스면 이메일 발송. 지금은 데모로 화면에 보여주기 위해 반환.
+  res.json({ ok:true, tempPassword });
+});
+
+function ensureDemoSocialUser(provider){
+  const users = readUsers();
+  const email = `${provider}_demo@demo.local`;
+  let u = users.find(x => x.email === email);
+  if(!u){
+    u = {
+      id: newId(),
+      name: provider === "google" ? "Google User" : "Kakao User",
+      email,
+      salt: "social",
+      passwordHash: "social",
+      provider,
+      createdAt: new Date().toISOString(),
+    };
+    users.push(u);
+    writeUsers(users);
+  }
+  return u;
+}
+
+// ✅ 실제 OAuth로 바꾸려면 여기에서 provider별 인증 플로우 구현하면 됨
+app.get("/auth/google", (req, res) => {
+  // 키 없으면 데모 로그인
+  const u = ensureDemoSocialUser("google");
+  const sid = newId();
+  SESSIONS.set(sid, { userId: u.id, createdAt: Date.now() });
+  setCookie(res, COOKIE_NAME, sid);
+
+  // iframe에서 열렸어도 정상 동작: login.html을 다시 닫게 하기 위해 "성공 페이지"로 이동
+  res.send(`
+    <script>
+      if(window.opener) window.opener.postMessage({type:"AUTH_SUCCESS"}, "*");
+      if(window.parent) window.parent.postMessage({type:"AUTH_SUCCESS"}, "*");
+      location.href="/";
+    </script>
+  `);
+});
+
+app.get("/auth/kakao", (req, res) => {
+  const u = ensureDemoSocialUser("kakao");
+  const sid = newId();
+  SESSIONS.set(sid, { userId: u.id, createdAt: Date.now() });
+  setCookie(res, COOKIE_NAME, sid);
+
+  res.send(`
+    <script>
+      if(window.opener) window.opener.postMessage({type:"AUTH_SUCCESS"}, "*");
+      if(window.parent) window.parent.postMessage({type:"AUTH_SUCCESS"}, "*");
+      location.href="/";
+    </script>
+  `);
+});
+
 
 app.post("/api/chat", async (req, res) => {
   try {

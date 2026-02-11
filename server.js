@@ -823,12 +823,47 @@ const enriched = await Promise.all(
 
 
 // =========================
-// ✅ ML-RISK 서버 캐시
+// ✅ ML-RISK 서버 캐시 (1회 크롤링 고정용: 파일 + 메모리)
 // =========================
+const ML_CACHE_PATH = path.join(__dirname, "data", "ml_cache.json");
+fs.mkdirSync(path.dirname(ML_CACHE_PATH), { recursive: true });
+
 let ML_CACHE = { ts: 0, data: null, running: null };
-const ML_CACHE_MS = 5 * 60 * 1000; // 5분 (원하는 값으로)
+
+// ✅ 데모면 길게: 24시간(원하면 더 늘려도 됨)
+const ML_CACHE_MS = 24 * 60 * 60 * 1000;
+
+// ✅ 서버 시작 시 파일 캐시 로드
+(function loadMlCacheFromDisk() {
+  try {
+    if (!fs.existsSync(ML_CACHE_PATH)) return;
+    const raw = fs.readFileSync(ML_CACHE_PATH, "utf-8");
+    const parsed = JSON.parse(raw || "null");
+    if (parsed?.data && parsed?.ts) {
+      ML_CACHE.ts = parsed.ts;
+      ML_CACHE.data = parsed.data;
+      console.log("[ML CACHE] loaded from disk:", new Date(ML_CACHE.ts).toISOString());
+    }
+  } catch (e) {
+    console.warn("[ML CACHE] load fail:", e.message);
+  }
+})();
+
+function saveMlCacheToDisk() {
+  try {
+    fs.writeFileSync(
+      ML_CACHE_PATH,
+      JSON.stringify({ ts: ML_CACHE.ts, data: ML_CACHE.data }, null, 2),
+      "utf-8"
+    );
+    console.log("[ML CACHE] saved to disk");
+  } catch (e) {
+    console.warn("[ML CACHE] save fail:", e.message);
+  }
+}
 
 async function computeMlRiskOnce(PORT) {
+  // ✅ 여기서만 "크롤링"이 발생 (1회만 실행되게 아래 getMlRiskCached가 막아줌)
   const resp = await fetch(`http://localhost:${PORT}/api/dabang-rooms?maxPages=30&maxItems=800`);
   const data = await resp.json();
   const items = data.items ?? [];
@@ -841,10 +876,9 @@ async function computeMlRiskOnce(PORT) {
   py.stdout.on("data", (d) => (out += d.toString()));
   py.stderr.on("data", (d) => (err += d.toString()));
 
-  const done = new Promise((resolve, reject) => {
+  const done = new Promise((resolve) => {
     py.on("close", (code) => {
       if (code !== 0) {
-        // ML 실패해도 fallback
         const enriched = items.map((it) => ({ ...it, mlRiskScore: null, mlRiskGrade: "안전" }));
         return resolve({ model: "fallback(no-ml)", totalCount: enriched.length, items: enriched, err });
       }
@@ -861,7 +895,8 @@ async function computeMlRiskOnce(PORT) {
         });
         resolve({ model: parsed.model, totalCount: enriched.length, items: enriched });
       } catch (e) {
-        reject(new Error(`bad python output: ${String(e?.message || e)}\n${out.slice(0, 200)}`));
+        const enriched = items.map((it) => ({ ...it, mlRiskScore: null, mlRiskGrade: "안전" }));
+        resolve({ model: "fallback(bad-output)", totalCount: enriched.length, items: enriched, err: String(e) });
       }
     });
   });
@@ -876,14 +911,18 @@ async function getMlRiskCached(PORT, force = false) {
   const now = Date.now();
   const fresh = ML_CACHE.data && (now - ML_CACHE.ts < ML_CACHE_MS);
 
+  // ✅ fresh면 절대 크롤링/ML 안 함
   if (!force && fresh) return ML_CACHE.data;
 
-  // 같은 타이밍에 여러 요청이 들어와도 1번만 돌게 (중복 실행 방지)
+  // ✅ 동시에 여러 요청 들어와도 "딱 1번"만 실행
   if (ML_CACHE.running) return ML_CACHE.running;
 
   ML_CACHE.running = (async () => {
     const data = await computeMlRiskOnce(PORT);
     ML_CACHE = { ts: Date.now(), data, running: null };
+
+    // ✅ 파일 저장해서 Render 재시작/페이지 새로고침에도 유지
+    saveMlCacheToDisk();
     return data;
   })().catch((e) => {
     ML_CACHE.running = null;
@@ -893,13 +932,9 @@ async function getMlRiskCached(PORT, force = false) {
   return ML_CACHE.running;
 }
 
-
-/**
- * ✅ ML Risk (필수)
- */
 app.get("/api/ml-risk", async (req, res) => {
   try {
-    const force = String(req.query.force ?? "0") === "1"; // 필요하면 ?force=1 로 강제 새로고침
+    const force = String(req.query.force ?? "0") === "1";
     const data = await getMlRiskCached(PORT, force);
     res.json(data);
   } catch (e) {
