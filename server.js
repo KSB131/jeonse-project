@@ -864,7 +864,7 @@ function saveMlCacheToDisk() {
 
 async function computeMlRiskOnce(PORT) {
   // ✅ 여기서만 "크롤링"이 발생 (1회만 실행되게 아래 getMlRiskCached가 막아줌)
-  const resp = await fetch(`http://localhost:${PORT}/api/dabang-rooms?maxPages=10&maxItems=800`);
+  const resp = await fetch(`http://localhost:${PORT}/api/dabang-rooms?maxPages=10&maxItems=300`);
   const data = await resp.json();
   const items = data.items ?? [];
 
@@ -1038,8 +1038,8 @@ app.get("/api/dabang-rooms", async (req, res) => {
       "user-agent": "Mozilla/5.0",
     };
 
-    const MAX_PAGES = Number(req.query.maxPages ?? 30);
-    const MAX_ITEMS = Number(req.query.maxItems ?? 800);
+    const MAX_PAGES = Number(req.query.maxPages ?? 10);
+    const MAX_ITEMS = Number(req.query.maxItems ?? 300);
     const zoom = String(req.query.zoom ?? 13);
     const useMap = String(req.query.useMap ?? "naver");
     const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
