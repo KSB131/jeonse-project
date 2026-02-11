@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>RSS 뉴스 테스트</title>
+
+  <!-- ✅ favicon 404 방지 -->
+  <link rel="icon" href="data:,">
+
+  <style>
+    :root{
+      --bg:#0b0f14;
+      --card:#0f1722;
+      --line:rgba(255,255,255,.10);
+      --txt:#eaf0f3;
+      --muted:rgba(234,240,243,.72);
+      --accent:#8fd3e8;
+      --shadow:0 14px 40px rgba(0,0,0,.35);
+    }
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans KR",sans-serif; background:var(--bg); color:var(--txt); }
+    a{ color:inherit; text-decoration:none; }
+    .wrap{ max-width:980px; margin:0 auto; padding:24px 16px 60px; }
+
+    header{
+      padding:16px;
+      border:1px solid var(--line);
+      border-radius:18px;
+      background:linear-gradient(180deg, rgba(20,28,40,.92), rgba(12,16,22,.75));
+      box-shadow:var(--shadow);
+      display:flex;
+      gap:12px;
+      justify-content:space-between;
+      align-items:flex-start;
+      flex-wrap:wrap;
+    }
+    h1{ margin:0; font-size:18px; }
+    .sub{ margin-top:6px; color:var(--muted); font-size:12px; line-height:1.5; }
+
+    .controls{ display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
+    .btn{
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(255,255,255,.06);
+      color:var(--txt);
+      padding:10px 12px;
+      border-radius:999px;
+      font-weight:800;
+      font-size:12px;
+      cursor:pointer;
+      transition: transform .08s ease, filter .15s ease;
+    }
+    .btn:hover{ transform: translateY(-1px); filter: brightness(1.05); }
+    .btn.primary{
+      background:rgba(143,211,232,.18);
+      border-color: rgba(143,211,232,.35);
+      color:#cfeef6;
+    }
+
+    .status{
+      margin-top:14px;
+      padding:12px 14px;
+      border-radius:14px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.04);
+      color:var(--muted);
+      font-size:13px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .spinner{
+      width:16px; height:16px;
+      border-radius:999px;
+      border:2px solid rgba(255,255,255,.18);
+      border-top-color: rgba(255,255,255,.65);
+      animation: spin .8s linear infinite;
+      flex:0 0 auto;
+    }
+    @keyframes spin{ to{ transform: rotate(360deg); } }
+
+    .grid{
+      margin-top:14px;
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap:14px;
+    }
+    @media (max-width: 900px){ .grid{ grid-template-columns: 1fr; } }
+
+    .card{
+      display:block;
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:16px;
+      background: rgba(255,255,255,.04);
+      box-shadow: 0 10px 28px rgba(0,0,0,.25);
+      transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+      min-height: 140px;
+    }
+    .card:hover{
+      transform: translateY(-2px);
+      box-shadow: 0 16px 40px rgba(0,0,0,.33);
+      border-color: rgba(143,211,232,.35);
+    }
+
+    .title{
+      font-weight:900;
+      font-size:14px;
+      line-height:1.35;
+      letter-spacing:-.2px;
+      margin-bottom:8px;
+      display:-webkit-box;
+      -webkit-line-clamp:2;
+      -webkit-box-orient:vertical;
+      overflow:hidden;
+    }
+    .desc{
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.5;
+      display:-webkit-box;
+      -webkit-line-clamp:2;  /* ✅ 1~2줄 */
+      -webkit-box-orient:vertical;
+      overflow:hidden;
+      min-height: 36px;
+    }
+    .meta{
+      margin-top:10px;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      font-size:11px;
+      color: rgba(234,240,243,.55);
+    }
+    .badge{
+      padding:5px 10px;
+      border-radius:999px;
+      border:1px solid rgba(143,211,232,.25);
+      background: rgba(143,211,232,.10);
+      color:#cfeef6;
+      font-weight:800;
+    }
+    .error{
+      margin-top:14px;
+      padding:12px 14px;
+      border-radius:14px;
+      border:1px solid rgba(255,0,0,.25);
+      background: rgba(255,0,0,.08);
+      color: rgba(234,240,243,.9);
+      font-size:13px;
+      line-height:1.5;
+    }
+    code.small{
+      font-size:11px;
+      color: rgba(234,240,243,.65);
+      word-break: break-all;
+      display:block;
+      margin-top:10px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>뉴스 RSS 테스트</h1>
+        <div class="sub">
+          서버(`/api/news`)가 RSS를 가져와서 <b>제목 + 요약(1~2줄)</b>로 보여줍니다.<br/>
+          (브라우저 CORS 문제 없음)
+        </div>
+        <code class="small">API: /api/news</code>
+      </div>
+
+      <div class="controls">
+        <button class="btn primary" id="reloadBtn" type="button">새로고침</button>
+      </div>
+    </header>
+
+    <div class="status" id="status" hidden>
+      <div class="spinner" aria-hidden="true"></div>
+      <div id="statusText">불러오는 중…</div>
+    </div>
+
+    <div class="error" id="errorBox" hidden></div>
+
+    <section class="grid" id="grid" aria-label="뉴스 목록"></section>
+  </div>
+
+  <script>
+    const $grid = document.getElementById("grid");
+    const $status = document.getElementById("status");
+    const $statusText = document.getElementById("statusText");
+    const $errorBox = document.getElementById("errorBox");
+
+    document.getElementById("reloadBtn").addEventListener("click", load);
+
+    function showLoading(msg){
+      $errorBox.hidden = true;
+      $status.hidden = false;
+      $statusText.textContent = msg || "불러오는 중…";
+    }
+    function hideLoading(){ $status.hidden = true; }
+
+    function escapeHtml(s=""){
+      return String(s)
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+
+    function formatDate(s){
+      const t = Date.parse(s);
+      if(!t) return "";
+      const d = new Date(t);
+      const yy = d.getFullYear();
+      const mm = String(d.getMonth()+1).padStart(2,"0");
+      const dd = String(d.getDate()).padStart(2,"0");
+      return `${yy}.${mm}.${dd}`;
+    }
+
+    async function load(){
+      showLoading("뉴스 불러오는 중…");
+      $grid.innerHTML = "";
+
+      try{
+        const r = await fetch("/api/news", { cache:"no-store" });
+        const data = await r.json();
+        if(!data.ok) throw new Error(data.message || "invalid response");
+
+        const items = Array.isArray(data.items) ? data.items : [];
+        if(!items.length){
+          hideLoading();
+          $errorBox.hidden = false;
+          $errorBox.textContent = "가져온 뉴스가 없어요.";
+          return;
+        }
+
+        $grid.innerHTML = items.map(it => `
+          <a class="card" href="${it.link}" target="_blank" rel="noopener noreferrer">
+            <div class="title">${escapeHtml(it.title)}</div>
+            <div class="desc">${escapeHtml(it.description || "요약을 가져오지 못했어요.")}</div>
+            <div class="meta">
+              <span class="badge">${escapeHtml(it.source || "Google News")}</span>
+              <span>·</span>
+              <span>${formatDate(it.pubDate) || "date n/a"}</span>
+            </div>
+          </a>
+        `).join("");
+
+        hideLoading();
+      }catch(e){
+        hideLoading();
+        $errorBox.hidden = false;
+        $errorBox.innerHTML = `불러오기 실패: <b>${escapeHtml(e.message)}</b>`;
+      }
+    }
+
+    load();
+  </script>
+</body>
+</html>

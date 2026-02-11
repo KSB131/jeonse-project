@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>로그인 | 전세지킴단</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body class="page-login">
+  <!-- embed=1이면 헤더 숨김 -->
+  <header id="loginHeader">
+    <div class="topbar">
+      <div class="brand">전세지킴단</div>
+    </div>
+    <nav class="nav">
+      <a href="/#top">HOME</a>
+      <a href="/#scam-types">FRAUD TYPES</a>
+      <a href="/#news">NEWS</a>
+      <a href="/map">MAP</a>
+      <a href="/trust">TRUST</a>
+      <a href="/chat">CHAT</a>
+      <a class="active" href="/login">LOGIN</a>
+    </nav>
+  </header>
+
+  <main class="login-wrap">
+    <section class="login-card" aria-label="로그인 폼">
+      <div class="login-head">
+        <h1 class="login-title">로그인</h1>
+        <p class="login-sub">전세지킴단 서비스를 이용하려면 로그인하세요.</p>
+      </div>
+
+      <form id="loginForm" class="login-form" autocomplete="on">
+        <div class="field">
+          <label for="email">이메일</label>
+          <input id="email" name="email" type="email" placeholder="name@example.com" required />
+        </div>
+
+        <div class="field">
+          <label for="password">비밀번호</label>
+          <input id="password" name="password" type="password" placeholder="비밀번호" required />
+        </div>
+
+        <div class="login-row">
+          <label class="remember">
+            <input type="checkbox" id="remember" />
+            <span>로그인 유지</span>
+          </label>
+
+          <!-- ✅ 모달 안에서는 같은 iframe에서 forgot으로 전환 -->
+          <a class="link" href="/forgot?embed=1" id="goForgot">비밀번호 찾기</a>
+        </div>
+
+        <button class="login-btn" type="submit">로그인</button>
+
+        <p class="login-foot">
+          계정이 없나요?
+          <a class="link strong" href="/signup?embed=1" id="goSignup">회원가입</a>
+        </p>
+
+        <div id="loginMsg" class="login-msg" hidden></div>
+      </form>
+
+      <div class="login-divider"><span>또는</span></div>
+
+      <div class="login-social">
+        <button type="button" class="social-btn" id="btnGoogle">
+          <span class="social-ic">G</span>
+          Google로 계속하기
+        </button>
+        <button type="button" class="social-btn" id="btnKakao">
+          <span class="social-ic">K</span>
+          Kakao로 계속하기
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // ✅ iframe embed 모드: 헤더 숨김 + 위 여백 제거
+    const params = new URLSearchParams(location.search);
+    if(params.get("embed") === "1"){
+      const h = document.getElementById("loginHeader");
+      if(h) h.style.display = "none";
+      document.body.style.paddingTop = "0";
+      document.querySelector(".login-wrap").style.paddingTop = "24px";
+    }
+
+    async function api(url, opts){
+      const r = await fetch(url, {
+        headers: { "Content-Type":"application/json" },
+        credentials: "include",
+        ...opts
+      });
+      const data = await r.json().catch(()=> ({}));
+      if(!r.ok) throw new Error(data.message || "request failed");
+      return data;
+    }
+
+    const $msg = document.getElementById("loginMsg");
+
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      $msg.hidden = false;
+      $msg.textContent = "로그인 중...";
+
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+
+      try{
+        await api("/api/auth/login", {
+          method:"POST",
+          body: JSON.stringify({ email, password })
+        });
+
+        $msg.textContent = "로그인 성공!";
+        // ✅ 부모(홈)에게 로그인 성공 알림
+        if(window.parent) window.parent.postMessage({ type:"AUTH_SUCCESS" }, "*");
+      }catch(err){
+        $msg.textContent = err.message || "로그인 실패";
+      }
+    });
+
+    // ✅ 소셜 로그인(서버 라우트로 이동)
+    document.getElementById("btnGoogle").addEventListener("click", () => {
+      location.href = "/auth/google";
+    });
+    document.getElementById("btnKakao").addEventListener("click", () => {
+      location.href = "/auth/kakao";
+    });
+  </script>
+</body>
+</html>

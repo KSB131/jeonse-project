@@ -1,0 +1,560 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Portfolio</title>
+
+  <!-- ✅ 공통 CSS 사용 -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+<header>
+  <div class="topbar">
+    <div class="brand">전세지킴단</div>
+  </div>
+
+  <nav class="nav">
+    <a href="#top">HOME</a>
+    <a href="#scam-types">FRAUD TYPES</a>
+    <a href="#news">NEWS</a>
+    <a href="/map">MAP</a>
+    <a href="/trust">TRUST</a>
+  </nav>
+</header>
+
+<!-- ✅ HOME 전용 스타일 스코프 -->
+<main class="page-home">
+  <section class="house" id="top">
+    <div class="house-bg" aria-hidden="true"></div>
+    <div class="house-inner">
+      <h1>Prevent rental fraud<br/>Start with better information</h1>
+    </div>
+  </section>
+
+  <!-- ✅ 전세사기 유형 섹션 -->
+  <section class="section" id="scam-types">
+    <h2>전세사기 유형</h2>
+
+    <!-- 카드 그리드 -->
+    <div class="scam-grid" id="scamGrid" aria-label="전세사기 유형 목록"></div>
+  </section>
+
+  <section class="section" id="news">
+    <h2>NEWS</h2>
+
+    <!-- ✅ 카드 그리드 -->
+    <div class="news-grid" id="newsGrid" aria-label="오늘의 뉴스 목록"></div>
+  </section>
+
+  <!-- ✅ NEWS 아래 스크롤 여유 공간 -->
+<div class="news-spacer" aria-hidden="true"></div>
+</main>
+
+<!-- ✅ 모달 (팝업) -->
+<div class="modal-backdrop" id="scamModalBackdrop" hidden></div>
+
+<div class="modal" id="scamModal" role="dialog" aria-modal="true" aria-labelledby="scamModalTitle" hidden>
+  <div class="modal-card">
+    <div class="modal-head">
+  <!-- ✅ 아이콘+제목을 하나로 묶어서 가운데 정렬 -->
+  <div class="modal-head-center">
+    <div class="modal-icon" id="scamModalIcon" aria-hidden="true">🏠</div>
+    <h3 class="modal-title" id="scamModalTitle">제목</h3>
+  </div>
+
+  <!-- X 버튼은 오른쪽 고정 -->
+  <button class="modal-x" id="scamModalClose" type="button" aria-label="닫기">✕</button>
+</div>
+
+    <div class="modal-body">
+      <p class="modal-desc" id="scamModalDesc"></p>
+
+      <div class="modal-block">
+        <div class="modal-block-title">⚠️ 왜 위험할까?</div>
+        <ul class="modal-list" id="scamModalRisk"></ul>
+      </div>
+
+      <div class="modal-block">
+        <div class="modal-block-title">🔎 주요 징후</div>
+        <ul class="modal-list" id="scamModalSigns"></ul>
+      </div>
+
+      <div class="modal-block">
+        <div class="modal-block-title">✅ 체크/예방</div>
+        <ul class="modal-list" id="scamModalTips"></ul>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-primary" id="scamModalOk" type="button">닫기</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  /* =========================
+   ✅ Nav active: 클릭 + 스크롤(확실한 방식)
+========================= */
+/* =========================
+   ✅ Scroll Spy: #top / #news active 자동 처리
+========================= */
+(function () {
+// ✅ 뒤로가기/페이지이동 시 스크롤 복원 막기(홈에서만)
+if ("scrollRestoration" in history) {
+  history.scrollRestoration = "manual";
+}
+
+// ✅ 홈으로 들어올 때(#top 또는 해시 없음) 무조건 최상단
+window.addEventListener("pageshow", () => {
+  if (location.hash === "" || location.hash === "#top") {
+    // 두 군데 다 찍어주면 브라우저별로 더 확실함
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    window.scrollTo(0, 0);
+  }
+});
+
+  const nav = document.querySelector(".nav");
+  if (!nav) return;
+
+  const links = Array.from(nav.querySelectorAll("a"));
+
+  const homeLink = links.find(a => a.getAttribute("href") === "#top");
+  const scamLink = links.find(a => a.getAttribute("href") === "#scam-types");
+  const newsLink = links.find(a => a.getAttribute("href") === "#news");
+
+  const header = document.querySelector("header");
+  const topEl = document.getElementById("top");
+  const scamEl = document.getElementById("scam-types");
+  const newsEl = document.getElementById("news");
+
+  if (!header || !topEl || !scamEl || !newsEl || !homeLink || !scamLink || !newsLink) return;
+
+  function setActive(link) {
+    links.forEach(a => a.classList.remove("active"));
+    link.classList.add("active");
+  }
+
+  // ✅ 관찰할 섹션 목록 (HOME / FRAUD TYPES / NEWS)
+  const sections = [
+    { el: topEl,  link: homeLink },
+    { el: scamEl, link: scamLink },
+    { el: newsEl, link: newsLink },
+  ];
+
+  // ✅ 클릭 후 스크롤 이동 중에는 스파이가 덮어쓰지 않게 잠금
+  let lockUntil = 0;
+  function lock(ms = 700) {
+    lockUntil = Date.now() + ms;
+  }
+
+  // ✅ "화면 중앙(헤더 아래 영역)"에 더 가까운 섹션을 active로 선택
+  function updateActive() {
+  if (Date.now() < lockUntil) return;
+
+  const headerH = header.getBoundingClientRect().height;
+  const viewportMid = headerH + (window.innerHeight - headerH) * 0.35;
+
+  // ✅ 맨 아래까지 내려가면 무조건 마지막 섹션(NEWS)
+  const atBottom =
+    window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
+  if (atBottom) {
+    setActive(newsLink);
+    return;
+  }
+
+  let best = null;
+  let bestDist = Infinity;
+
+  for (const s of sections) {
+    const r = s.el.getBoundingClientRect();
+
+    // ✅ "조금이라도" 화면에 보이면 후보로 (조건 완화)
+    // header 아래 영역과 겹치기만 하면 OK
+    const visible = r.bottom > headerH + 1 && r.top < window.innerHeight - 1;
+    if (!visible) continue;
+
+    const center = (r.top + r.bottom) / 2;
+    const dist = Math.abs(center - viewportMid);
+
+    if (dist < bestDist) {
+      bestDist = dist;
+      best = s;
+    }
+  }
+
+  if (best) setActive(best.link);
+}
+
+  // ✅ 스크롤/리사이즈/로드 때 갱신
+  window.addEventListener("scroll", updateActive, { passive: true });
+  window.addEventListener("resize", updateActive);
+  window.addEventListener("load", updateActive);
+
+  // ✅ 클릭 시: active 먼저 주고 잠금
+  nav.addEventListener("click", (e) => {
+  const a = e.target.closest("a");
+  if (!a) return;
+
+  const href = a.getAttribute("href");
+
+  // ✅ HOME은 무조건 "진짜 최상단(0)"으로
+  if (href === "#top") {
+  e.preventDefault();
+  setActive(homeLink);
+  lock();
+
+  // ✅ 강제 최상단(브라우저별 확실)
+  document.documentElement.scrollTop = 0;
+  document.body.scrollTop = 0;
+  window.scrollTo({ top: 0, behavior: "smooth" });
+
+  // ✅ 해시 제거(선택)
+  history.replaceState(null, "", location.pathname + location.search);
+  return;
+}
+
+  // 나머지는 기존 동작 그대로(영향 없음)
+  if (href === "#scam-types") {
+    setActive(scamLink);
+    lock();
+  } else if (href === "#news") {
+    setActive(newsLink);
+    lock();
+  }
+});
+
+
+  // ✅ 초기/레이아웃 변동 대비
+  updateActive();
+  setTimeout(updateActive, 0);
+  setTimeout(updateActive, 300);
+  setTimeout(updateActive, 800);
+})();
+
+  /* =========================
+     ✅ 전세사기 유형: 카드 + 모달
+  ========================= */
+
+  // 1) 데이터 (여기만 바꾸면 카드/모달 내용이 자동 변경됨)
+  const SCAM_TYPES = [
+    {
+      key: "kkang",
+      icon: "🏠",
+      title: "깡통전세",
+      short: "집값 대비 보증금이 과도해 경매 시 보증금 회수가 어려운 유형",
+      desc: "전세금이 매매가(또는 시세)와 비슷하거나 더 높아, 집이 경매/공매로 넘어가면 보증금을 전액 돌려받기 어렵습니다.",
+      risk: [
+        "경매 시 선순위 채권(근저당 등) 뒤로 밀리면 보증금 손실",
+        "집값 하락기에는 손실 가능성이 급격히 커짐"
+      ],
+      signs: [
+        "전세가율(전세/매매)이 80~100% 이상으로 높음",
+        "주변 시세보다 전세가가 유독 높음",
+        "신축 빌라/다세대에 거래표본이 부족함"
+      ],
+      tips: [
+        "등기부등본에서 근저당/가압류 확인",
+        "인근 실거래가·전세 시세와 비교",
+        "전세보증금 반환보증 가입 가능 여부 확인"
+      ]
+    },
+    {
+      key: "double",
+      icon: "📄",
+      title: "이중계약",
+      short: "같은 집을 여러 명에게 계약하거나 계약 내용을 다르게 작성하는 유형",
+      desc: "동일 주택에 중복으로 계약을 체결하거나, 임차인에게 보여준 계약 내용과 실제 신고/보관된 계약 내용이 다른 방식으로 보증금을 편취합니다.",
+      risk: [
+        "대항력/우선변제 순위가 꼬여 보증금 회수 불리",
+        "계약 무효/분쟁으로 회수에 장기간 소요"
+      ],
+      signs: [
+        "계약을 지나치게 서두르게 함(오늘만 가능 등)",
+        "원본 계약서 전달을 미루거나 사본만 제공",
+        "특약·계약금 입금 계좌가 불명확/수시 변경"
+      ],
+      tips: [
+        "계약서 원본 즉시 수령 + 특약 명확히",
+        "계약금/잔금은 소유자 명의 계좌로",
+        "계약 직전 등기부 재확인(변동 여부)"
+      ]
+    },
+    {
+      key: "fakeOwner",
+      icon: "🪪",
+      title: "허위 임대인",
+      short: "실제 소유자가 아닌 사람이 집주인인 척 계약하는 유형(위임장 위조 포함)",
+      desc: "소유자가 아닌 사람이 임대인 행세를 하거나, 위임장을 위조해 대리 계약을 체결해 보증금을 가로챕니다.",
+      risk: [
+        "계약 자체가 무효가 될 수 있어 보증금 회수 난항",
+        "수사·소송으로 장기화될 가능성"
+      ],
+      signs: [
+        "소유자와 직접 통화/대면을 회피",
+        "등기부등본 확인을 꺼리거나 설명을 회피",
+        "신분증·위임장 사본만 제시"
+      ],
+      tips: [
+        "등기부등본상 소유자와 계약 당사자 일치 확인",
+        "대리 계약이면 위임장 + 인감증명 등 진위 확인",
+        "중개사 등록 여부·사무소 실체 확인"
+      ]
+    },
+    {
+      key: "seniorDebt",
+      icon: "🏦",
+      title: "선순위 채권 은폐",
+      short: "근저당·가압류 등 선순위 권리를 숨기고 계약하는 유형",
+      desc: "이미 설정된 근저당, 가압류, 선순위 전세권 등이 많아도 제대로 고지하지 않거나 축소 설명하여 임차인을 유인합니다.",
+      risk: [
+        "경매 시 선순위 채권이 먼저 배당되어 보증금 손실",
+        "특히 전세가율이 높을수록 위험 증가"
+      ],
+      signs: [
+        "등기부 설명을 대충 넘기거나 확인을 막음",
+        "‘문제 없다’ 식 구두 설명만 반복",
+        "계약 직전/직후 권리변동 가능성"
+      ],
+      tips: [
+        "계약 당일 ‘최신’ 등기부등본 재발급 확인",
+        "선순위 채권 합계 + 보증금이 시세를 넘는지 계산",
+        "특약에 ‘권리변동 시 계약 해제’ 문구 고려"
+      ]
+    },
+    {
+      key: "trust",
+      icon: "🧾",
+      title: "신탁 부동산 사기",
+      short: "신탁된 집을 신탁회사 동의 없이 계약해 계약 효력이 문제되는 유형",
+      desc: "등기부에 ‘신탁’이 설정된 부동산은 실제 처분·임대 권한이 신탁회사(수탁자)에 있을 수 있어, 동의 없이 계약하면 효력이 부정될 수 있습니다.",
+      risk: [
+        "신탁회사 동의 없으면 계약 무효 가능",
+        "보증금 반환이 매우 어려워질 수 있음"
+      ],
+      signs: [
+        "등기부에 신탁 표기가 있음",
+        "‘형식’이라며 동의서/확인서를 제공하지 않음",
+        "임대인 명의가 소유자로 보이지 않음"
+      ],
+      tips: [
+        "신탁원부/신탁계약 관련 확인",
+        "신탁회사 동의서(임대차 승낙) 필수 확인",
+        "의심되면 계약 보류 후 전문가 상담"
+      ]
+    },
+    {
+      key: "illegalBuilding",
+      icon: "🧱",
+      title: "불법 건축물 전세",
+      short: "불법 증축·용도 변경 등 위법 건축물에 계약해 권리 보호가 약해지는 유형",
+      desc: "불법 증축/용도 변경된 호실은 등기·대장과 실제가 불일치할 수 있어, 확정일자·대항력 등 권리 보호가 약해지거나 분쟁이 생길 수 있습니다.",
+      risk: [
+        "권리 보호가 약해져 보증금 회수 불리",
+        "철거/이행강제금 등 리스크가 발생"
+      ],
+      signs: [
+        "등기/건축물대장에 없는 호수·면적",
+        "세대 수가 과도하거나 구조가 비정상",
+        "‘다들 이렇게 산다’ 식으로 얼버무림"
+      ],
+      tips: [
+        "건축물대장·등기부와 실제 호실 일치 확인",
+        "전입/확정일자 가능 여부 점검",
+        "보증보험 가입 가능 여부로 1차 필터링"
+      ]
+    }
+  ];
+
+  const gridEl = document.getElementById("scamGrid");
+
+  // 모달 요소
+  const backdrop = document.getElementById("scamModalBackdrop");
+  const modal = document.getElementById("scamModal");
+  const modalTitle = document.getElementById("scamModalTitle");
+  const modalIcon = document.getElementById("scamModalIcon");
+  const modalDesc = document.getElementById("scamModalDesc");
+  const modalRisk = document.getElementById("scamModalRisk");
+  const modalSigns = document.getElementById("scamModalSigns");
+  const modalTips = document.getElementById("scamModalTips");
+  const btnClose = document.getElementById("scamModalClose");
+  const btnOk = document.getElementById("scamModalOk");
+
+  let lastFocusEl = null;
+
+  function renderCards() {
+  if (!gridEl) return;
+
+  gridEl.innerHTML = SCAM_TYPES.map(t => `
+    <article class="scam-card">
+      <div class="scam-card-icon" aria-hidden="true">${t.icon}</div>
+      <div class="scam-card-title">${t.title}</div>
+      <div class="scam-card-sub">${t.short}</div>
+      <button class="scam-card-btn" type="button" data-key="${t.key}">자세히 보기</button>
+    </article>
+  `).join("");
+
+  // ✅ 이벤트 중복 방지: 기존 리스너 제거하려면 위임 방식으로 유지
+  gridEl.onclick = (e) => {
+  const btn = e.target.closest("button[data-key]");
+  if (!btn) return;
+
+  const key = btn.getAttribute("data-key");
+  const data = SCAM_TYPES.find(x => x.key === key);
+  if (!data) return;
+
+  openModal(data, btn);
+};
+}
+
+function fillList(ul, items) {
+  ul.innerHTML = (items || []).map(x => `<li>${x}</li>`).join("");
+}
+
+
+  function forceCloseOnLoad(){
+
+  // ✅ 닫기 이벤트
+  backdrop.addEventListener("click", closeModal);
+  btnClose.addEventListener("click", closeModal);
+  btnOk.addEventListener("click", closeModal);
+
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !modal.hidden) closeModal();
+  });
+
+  // ✅ 혹시 CSS가 먹통이어도 무조건 닫힌 상태로 강제
+  modal.hidden = true;
+  backdrop.hidden = true;
+
+  // 혹시 style로 display가 남아있을 수 있으니 같이 제거
+  modal.style.display = "none";
+  backdrop.style.display = "none";
+
+  document.documentElement.classList.remove("modal-open");
+}
+
+function openModal(data, focusReturnEl) {
+  lastFocusEl = focusReturnEl || document.activeElement;
+
+  modalIcon.textContent = data.icon;
+
+  // ✅ 조사 보정: 받침 있으면 "이란?", 없으면 "란?"
+const lastChar = data.title.at(-1);
+const code = lastChar ? lastChar.charCodeAt(0) : 0;
+const hasBatchim = (code >= 0xac00 && code <= 0xd7a3) ? ((code - 0xac00) % 28 !== 0) : false;
+
+modalTitle.textContent = `${data.title}${hasBatchim ? "이란?" : "란?"}`;
+
+  modalDesc.textContent = data.desc;
+
+  fillList(modalRisk, data.risk);
+  fillList(modalSigns, data.signs);
+  fillList(modalTips, data.tips);
+
+  // ✅ 열기
+  backdrop.hidden = false;
+  modal.hidden = false;
+  backdrop.style.display = "block";
+  modal.style.display = "grid";
+
+  document.documentElement.classList.add("modal-open");
+  btnClose.focus({ preventScroll: true });
+}
+
+function closeModal() {
+  // ✅ 닫기
+  modal.hidden = true;
+  backdrop.hidden = true;
+
+  modal.style.display = "none";
+  backdrop.style.display = "none";
+
+  document.documentElement.classList.remove("modal-open");
+
+  if (lastFocusEl && typeof lastFocusEl.focus === "function") {
+    lastFocusEl.focus({ preventScroll: true });
+  }
+}
+
+// ✅ 초기 렌더
+renderCards();
+
+// ✅ 페이지 진입 시 무조건 닫기
+forceCloseOnLoad();
+
+/* =========================
+   ✅ News: 서버(/api/news)에서 가져와 카드로 렌더
+========================= */
+async function loadNews() {
+  const wrap = document.getElementById("newsGrid");
+  if (!wrap) return;
+
+  // 로딩 UI
+  wrap.innerHTML = `
+    <article class="news-card skeleton"></article>
+    <article class="news-card skeleton"></article>
+    <article class="news-card skeleton"></article>
+  `;
+
+  try {
+    const r = await fetch("/api/news");
+    const data = await r.json();
+
+    if (!data.ok || !Array.isArray(data.items)) {
+      throw new Error(data.message || "invalid response");
+    }
+
+    const items = data.items.slice(0, 3); // ✅ 사진처럼 3개만
+
+    wrap.innerHTML = items.map((it) => {
+  const title = (it.title || "").trim();
+  const desc = (it.description || "").trim();
+
+  return `
+    <a class="news-card" href="${it.link}" target="_blank" rel="noopener noreferrer">
+      <div class="news-title">${escapeHtml(title)}</div>
+      ${desc ? `<div class="news-desc">${escapeHtml(desc)}</div>` : ""}
+      <div class="news-meta">
+        <span class="news-source">${escapeHtml(it.source || "")}</span>
+        <span class="news-dot">·</span>
+        <span class="news-date">${formatDate(it.pubDate)}</span>
+      </div>
+    </a>
+  `;
+}).join("");
+
+  } catch (e) {
+    wrap.innerHTML = `
+      <div class="news-empty">
+        뉴스를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.
+      </div>
+    `;
+    console.error(e);
+  }
+}
+
+// XSS 방지(최소)
+function escapeHtml(s = "") {
+  return String(s)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function formatDate(s) {
+  const t = Date.parse(s);
+  if (!t) return "";
+  const d = new Date(t);
+  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
+}
+
+// ✅ 실행
+loadNews();
+</script>
+</body>
+</html>

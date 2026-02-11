@@ -1,0 +1,10 @@
+{
+  "base_url": "http://localhost:3000",
+  "max_pages": 30,
+  "max_items": 800,
+  "rolling_days": 30,
+  "test_size": 0.2,
+  "random_seed": 42,
+  "metric": "rmse",
+  "min_improve_to_switch": 0.002
+}

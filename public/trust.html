@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>임대인 신뢰 검사</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body class="page-trust">
+  <header>
+    <div class="topbar">
+      <div class="brand">전세지킴단</div>
+    </div>
+
+    <div class="auth-area" id="authArea">
+  <button class="auth-btn ghost" id="btnLogin" type="button">LOGIN</button>
+  <button class="auth-btn" id="btnRegister" type="button">REGISTER</button>
+
+  <div class="auth-user" id="authUser" hidden>
+    <span class="auth-name" id="authName"></span>
+    <button class="auth-btn" id="btnLogout" type="button">LOGOUT</button>
+  </div>
+</div>
+
+    <nav class="nav">
+      <a href="/#top">HOME</a>
+      <a href="/#scam-types">FRAUD TYPES</a>
+      <a href="/#news">NEWS</a>
+      <a href="/map">MAP</a>
+      <a class="active" href="/trust">TRUST</a>
+      <a href="/chat">CHAT</a>
+      
+    </nav>
+  </header>
+
+  <main class="trust-wrap">
+    <section class="trust-hero">
+      <h1>임대인 신뢰 검사</h1>
+      <p class="trust-sub">등기부등본(PDF)을 업로드하면, 권리관계 위험 신호를 점검하고 주의 문구를 제공합니다.</p>
+    </section>
+
+    <div id="fromMapBanner" class="trust-frommap" hidden></div>
+
+    <section class="trust-grid">
+      <!-- 1) 업로드 카드 -->
+      <div class="trust-card">
+        <div class="trust-card-title">1. 등기부등본 업로드</div>
+
+        <label class="file-drop" for="registryPdf">
+          <div class="file-ic">⬆️</div>
+          <div class="file-txt">
+            <div class="file-main">PDF 파일 업로드</div>
+            <div class="file-sub">스캔본(이미지 PDF)은 텍스트 인식이 안 될 수 있어요.</div>
+          </div>
+        </label>
+
+        <input id="registryPdf" type="file" accept="application/pdf" hidden />
+        <div id="fileName" class="file-name">선택된 파일 없음</div>
+
+        <div class="mini-hint">
+          * 개인정보가 포함될 수 있으니 테스트 시 민감정보는 가급적 가린 파일로 사용하세요.
+        </div>
+      </div>
+
+      <!-- 2) 선택 입력 카드 -->
+      <div class="trust-card">
+        <div class="trust-card-title">2. 추가 정보 입력 (선택)</div>
+
+        <div class="form-grid">
+          <div class="field">
+            <label>임대인 이름</label>
+            <input id="landlordName" type="text" placeholder="예) 홍길동" />
+          </div>
+
+          <div class="field">
+            <label>계약 날짜</label>
+            <input id="contractDate" type="date" />
+          </div>
+
+          <div class="field">
+            <label>보증금 금액(원)</label>
+            <input id="depositWon" type="number" placeholder="예) 100000000" />
+          </div>
+
+          <div class="field">
+            <label>임대차 주소</label>
+            <input id="address" type="text" placeholder="예) 서울시 ○○구 ○○로..." />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="trust-actions">
+      <button id="analyzeBtn" class="trust-btn" disabled>분석하기</button>
+      <div id="loading" class="trust-loading" hidden>
+        <div class="spinner"></div>
+        <span>분석 중입니다…</span>
+      </div>
+      <div id="errorBox" class="trust-error" hidden></div>
+    </div>
+
+    <!-- 결과 -->
+    <section id="resultSection" class="trust-result" hidden>
+      <div class="result-head">
+        <div class="result-title">분석 결과</div>
+        <div id="resultBadge" class="result-badge">—</div>
+      </div>
+
+      <div class="result-kpis">
+        <div class="kpi">
+          <div class="kpi-label">위험 점수</div>
+          <div id="scoreText" class="kpi-value">—</div>
+        </div>
+        
+
+        <div class="kpi">
+          <div class="kpi-label">등급</div>
+          <div id="gradeText" class="kpi-value">—</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">채권최고액(추출)</div>
+          <div id="claimText" class="kpi-value">—</div>
+        </div>
+      </div>
+      <div class="trust-cta">
+  <button id="openMapBtn" class="trust-btn ghost" type="button">
+    이 주소를 지도에서 보기
+  </button>
+  <button id="compareMapBtn" class="trust-btn" type="button">
+    주변 유사 시세 비교하기
+  </button>
+</div>
+
+      <div class="result-block">
+        <div class="result-block-title">위험 신호 요약</div>
+        <ul id="reasons" class="result-list"></ul>
+      </div>
+
+      <div class="result-block">
+        <div class="result-block-title">주의 문구</div>
+        <ul id="notices" class="result-list"></ul>
+      </div>
+
+      <div class="result-block">
+        <div class="result-block-title">체크리스트</div>
+        <div id="checklist" class="checklist"></div>
+      </div>
+
+      <div id="scanHint" class="scan-hint" hidden>
+        ⚠️ 텍스트 추출량이 매우 적습니다. 스캔본(이미지 PDF)일 수 있어 정확도가 낮을 수 있어요.
+      </div>
+    </section>
+  </main>
+
+  <script src="trust.js"></script>
+
+  <!-- =========================
+   ✅ AUTH MODAL (login/signup/forgot)
+========================= -->
+<div class="auth-backdrop" id="authBackdrop" hidden></div>
+
+<div class="auth-modal" id="authModal" role="dialog" aria-modal="true" aria-labelledby="authModalTitle" hidden>
+  <div class="auth-card">
+    <div class="auth-head">
+      <div class="auth-head-center">
+        <div class="auth-ic" aria-hidden="true">🔐</div>
+        <h3 class="auth-title" id="authModalTitle">로그인</h3>
+      </div>
+      <button class="auth-x" id="authClose" type="button" aria-label="닫기">✕</button>
+    </div>
+
+    <!-- ✅ login.html / signup.html / forgot.html 을 iframe으로 띄움 -->
+    <iframe class="auth-frame" id="authFrame" title="인증" src="about:blank"></iframe>
+  </div>
+</div>
+
+<script src="/src/auth-ui.js"></script>
+</body>
+</html>

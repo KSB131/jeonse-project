@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>전세 매물 지도</title>
+
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- Kakao 지도 SDK -->
+  <script
+    src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=efc249573dfa6dc65318134e1cb41c4d&libraries=services"
+  ></script>
+</head>
+
+<body class="page-map">
+  <header>
+    <div class="topbar">
+      <div class="brand">전세지킴단</div>
+    </div>
+
+    <div class="auth-area" id="authArea">
+  <button class="auth-btn ghost" id="btnLogin" type="button">LOGIN</button>
+  <button class="auth-btn" id="btnRegister" type="button">REGISTER</button>
+
+  <div class="auth-user" id="authUser" hidden>
+    <span class="auth-name" id="authName"></span>
+    <button class="auth-btn" id="btnLogout" type="button">LOGOUT</button>
+  </div>
+</div>
+
+    <nav class="nav">
+      <a href="/#top">HOME</a>
+      <a href="/#scam-types">FRAUD TYPES</a>
+      <a href="/#news">NEWS</a>
+      <a class="active" href="/map">MAP</a>
+      <a href="/trust">TRUST</a>
+      <a href="/chat">CHAT</a>
+    </nav>
+  </header>
+
+  <div id="container">
+    <div id="sidebar" class="collapsed">
+      <!-- ✅ 손잡이(접혀있을 때도 보이는 탭) -->
+      <button id="sidebarHandle" type="button" aria-label="사이드바 열기">
+        ☰
+      </button>
+
+      <!-- ✅ 사이드바 상단 헤더(열렸을 때 닫기) -->
+      <div class="sidebar-head">
+        <div class="sidebar-title">매물 정보</div>
+        <button id="sidebarClose" type="button" aria-label="사이드바 닫기">✕</button>
+      </div>
+
+  <hr />
+  <div id="info">
+    <p>📌 마커를 클릭하면</p>
+    <p>전세사기 위험도 정보 표시 예정</p>
+  </div>
+</div>
+
+<!-- ✅ Search/Filter Dock -->
+<div id="toolDock" class="collapsed-search collapsed-filter">
+  <!-- 🔍 검색 버튼 -->
+  <button id="searchToggle" class="toolBtn" type="button" aria-label="검색 열기">🔍</button>
+
+  <!-- 🧰 필터 버튼 -->
+  <button id="filterToggle" class="toolBtn" type="button" aria-label="필터 열기">⚙️</button>
+
+  <!-- ✅ 검색 패널 -->
+  <form class="toolPanel searchPanel" role="search" onsubmit="searchAddress(); return false;">
+  <input type="text" id="address" placeholder="도로명 또는 지번 주소 입력" />
+  <button type="submit">지도에 표시</button>
+</form>
+
+  <!-- ✅ 필터 패널 -->
+  <div class="toolPanel filterPanel" id="typeFilters">
+    <button type="button" class="typeBtn active" data-type="all">전체</button>
+    <button type="button" class="typeBtn" data-type="apt">아파트</button>
+    <button type="button" class="typeBtn" data-type="officetel">오피스텔</button>
+    <button type="button" class="typeBtn" data-type="house-villa">원/투룸</button>
+  </div>
+</div>
+
+    <div id="map"></div>
+  </div>
+
+  <!-- ✅ 반드시 map.js보다 먼저 -->
+  <script src="components.js"></script>
+  <script src="map.js"></script>
+
+  <!-- =========================
+   ✅ AUTH MODAL (login/signup/forgot)
+========================= -->
+<div class="auth-backdrop" id="authBackdrop" hidden></div>
+
+<div class="auth-modal" id="authModal" role="dialog" aria-modal="true" aria-labelledby="authModalTitle" hidden>
+  <div class="auth-card">
+    <div class="auth-head">
+      <div class="auth-head-center">
+        <div class="auth-ic" aria-hidden="true">🔐</div>
+        <h3 class="auth-title" id="authModalTitle">로그인</h3>
+      </div>
+      <button class="auth-x" id="authClose" type="button" aria-label="닫기">✕</button>
+    </div>
+
+    <!-- ✅ login.html / signup.html / forgot.html 을 iframe으로 띄움 -->
+    <iframe class="auth-frame" id="authFrame" title="인증" src="about:blank"></iframe>
+  </div>
+</div>
+
+<script src="/src/auth-ui.js"></script>
+</body>
+</html>

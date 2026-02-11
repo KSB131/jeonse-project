@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Chat Bot</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body class="page-chat">
+  <header>
+    <div class="topbar">
+      <div class="brand">전세지킴단</div>
+    </div>
+
+    <nav class="nav">
+      <a href="/#top">HOME</a>
+      <a href="/#scam-types">FRAUD TYPES</a>
+      <a href="/#news">NEWS</a>
+      <a href="/map">MAP</a>
+      <a href="/trust">TRUST</a>
+      <a class="active" href="/chat">CHAT</a>
+    </nav>
+  </header>
+
+  <main class="chat-wrap">
+  <section class="chat-card" aria-label="전세사기 대처 챗봇">
+    <div class="chat-header">
+      <div class="chat-title">전세사기 대처 가이드</div>
+      <div class="chat-sub">버튼으로 단계별 안내 / 자유 입력도 가능</div>
+    </div>
+
+    <!-- ✅ 메시지 영역 -->
+    <div id="chatMessages" class="chat-messages" role="log" aria-live="polite"></div>
+
+    <!-- ✅ 퀵 버튼(1,2,3...) -->
+    <div class="chat-quick" aria-label="빠른 선택">
+      <button class="quick-btn" data-topic="step1">1. 계약 전 체크</button>
+      <button class="quick-btn" data-topic="step2">2. 등기부 확인</button>
+      <button class="quick-btn" data-topic="step3">3. 신뢰도 검사</button>
+      <button class="quick-btn" data-topic="step4">4. 계약/입주 안전장치</button>
+      <button class="quick-btn" data-topic="step5">5. 의심/피해 대처</button>
+    </div>
+
+    <!-- ✅ 입력 -->
+    <form id="chatForm" class="chat-input" autocomplete="off">
+      <input id="chatText" type="text" placeholder="예: 전입신고는 언제 해야 해?" />
+      <button type="submit">전송</button>
+    </form>
+  </section>
+</main>
+
+<script src="/chat.js"></script>
+
+
+</body>
+</html>

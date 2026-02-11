@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>회원가입 | 전세지킴단</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="page-login">
+  <main class="login-wrap">
+    <section class="login-card">
+      <div class="login-head">
+        <h1 class="login-title">회원가입</h1>
+        <p class="login-sub">이메일로 간단하게 가입할 수 있어요.</p>
+      </div>
+
+      <form id="signupForm" class="login-form" autocomplete="on">
+        <div class="field">
+          <label for="name">이름</label>
+          <input id="name" name="name" type="text" placeholder="이름" required />
+        </div>
+
+        <div class="field">
+          <label for="email">이메일</label>
+          <input id="email" name="email" type="email" placeholder="name@example.com" required />
+        </div>
+
+        <div class="field">
+          <label for="password">비밀번호</label>
+          <input id="password" name="password" type="password" placeholder="비밀번호(6자 이상)" minlength="6" required />
+        </div>
+
+        <button class="login-btn" type="submit">회원가입</button>
+
+        <p class="login-foot">
+          이미 계정이 있나요?
+          <a class="link strong" href="/login?embed=1">로그인</a>
+        </p>
+
+        <div id="msg" class="login-msg" hidden></div>
+      </form>
+    </section>
+  </main>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    if(params.get("embed") === "1"){
+      document.body.style.paddingTop = "0";
+      document.querySelector(".login-wrap").style.paddingTop = "24px";
+    }
+
+    async function api(url, opts){
+      const r = await fetch(url, {
+        headers: { "Content-Type":"application/json" },
+        credentials: "include",
+        ...opts
+      });
+      const data = await r.json().catch(()=> ({}));
+      if(!r.ok) throw new Error(data.message || "request failed");
+      return data;
+    }
+
+    const $msg = document.getElementById("msg");
+
+    document.getElementById("signupForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      $msg.hidden = false;
+      $msg.textContent = "가입 중...";
+
+      const name = document.getElementById("name").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+
+      try{
+        await api("/api/auth/register", {
+          method:"POST",
+          body: JSON.stringify({ name, email, password })
+        });
+        $msg.textContent = "회원가입 성공! (자동 로그인)";
+        if(window.parent) window.parent.postMessage({ type:"AUTH_SUCCESS" }, "*");
+      }catch(err){
+        $msg.textContent = err.message || "회원가입 실패";
+      }
+    });
+  </script>
+</body>
+</html>

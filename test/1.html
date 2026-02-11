@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Portfolio</title>
+
+  <style>
+    :root{
+      --nav-h: 78px;
+      --nav-bg: #0f6a86;
+      --ink: #eaf6ff;
+      --accent: #55d7ff;
+    }
+
+    *{ box-sizing: border-box; }
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans KR", sans-serif;
+      background:#fff;
+    }
+
+    /* ===== Header ===== */
+    header{
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: var(--nav-bg);
+      border-bottom: 1px solid rgba(255,255,255,.14);
+      box-shadow: 0 2px 0 rgba(0,0,0,.05);
+    }
+
+    .topbar{
+      height: var(--nav-h);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding: 0 18px;
+      position: relative;
+    }
+
+    .brand{
+      position:absolute;
+      left:50%;
+      transform: translateX(-50%);
+      color: var(--ink);
+      font-weight: 650;
+      font-size: 22px;
+      text-shadow: 0 1px 0 rgba(0,0,0,.25);
+    }
+
+    .icon-btn{
+      width:44px;
+      height:44px;
+      display:grid;
+      place-items:center;
+      border:0;
+      background:transparent;
+      cursor:pointer;
+      color:var(--ink);
+    }
+
+    .nav{
+      display:flex;
+      gap:22px;
+      padding: 0 18px 10px;
+      align-items:flex-end;
+    }
+
+    .nav a{
+      color: var(--ink);
+      text-decoration:none;
+      font-weight:700;
+      font-size:11px;
+      letter-spacing:.6px;
+      padding:10px 2px;
+      position:relative;
+    }
+
+    .nav a.active::after{
+      content:"";
+      position:absolute;
+      left:0; right:0; bottom:0;
+      height:3px;
+      background: var(--accent);
+      border-radius:999px;
+    }
+
+    /* ===== House (실제 이미지) ===== */
+    .house{
+      min-height:520px;
+      position:relative;
+      overflow:hidden;
+    }
+
+    .house-bg{
+      position:absolute;
+      inset:0;
+      background:
+        linear-gradient(
+          rgba(0,0,0,.45),
+          rgba(0,0,0,.65)
+        ),
+        url("../src/image/house1.jpg") center / cover no-repeat;
+      z-index:1;
+    }
+
+    .house-inner{
+      position:relative;
+      z-index:2;
+      max-width:980px;
+      margin:0 auto;
+      padding:80px 18px 0;
+      text-align:center;
+    }
+
+    .house h1{
+      margin:0;
+      color:#fff;
+      font-weight:800;
+      font-size:clamp(30px,4vw,48px);
+      line-height:1.08;
+      text-shadow:0 6px 30px rgba(0,0,0,.6);
+    }
+
+    /* ===== Section ===== */
+    .section{
+      padding:46px 16px 70px;
+      text-align:center;
+      border-top:1px solid #eef2f5;
+    }
+
+    .section h2{
+      margin:0;
+      font-size:22px;
+      font-weight:500;
+      color:#222;
+    }
+
+    @media (max-width:720px){
+      :root{ --nav-h:72px; }
+      .brand{ font-size:20px; }
+      .nav{ gap:18px; overflow:auto; }
+      .house-inner{ padding-top:56px; }
+    }
+  </style>
+</head>
+
+<body>
+<header>
+  <div class="topbar">
+    <button class="icon-btn" aria-label="메뉴">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+        <path d="M4 7h16M4 12h16M4 17h16"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </button>
+
+    <div class="brand">Portfolio</div>
+
+    <button class="icon-btn" aria-label="검색">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+        <path d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z"
+              stroke="currentColor" stroke-width="2"/>
+        <path d="M16.3 16.3 21 21"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </div>
+
+  <nav class="nav">
+    <a class="active" href="#">HOME</a>
+    <a href="#">TEAM</a>
+    <a href="#">ARCHIVE</a>
+    <a href="#">CONTACT</a>
+  </nav>
+</header>
+
+<main>
+  <section class="house">
+    <div class="house-bg" aria-hidden="true"></div>
+
+    <div class="house-inner">
+      <h1>We strive to greet<br/>a better future.</h1>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>I am a positive person</h2>
+  </section>
+</main>
+</body>
+</html>

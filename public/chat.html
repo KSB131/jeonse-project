@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Chat Bot</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body class="page-chat">
+  <header>
+    <div class="topbar">
+      <div class="brand">전세지킴단</div>
+    </div>
+
+    <div class="auth-area" id="authArea">
+  <button class="auth-btn ghost" id="btnLogin" type="button">LOGIN</button>
+  <button class="auth-btn" id="btnRegister" type="button">REGISTER</button>
+
+  <div class="auth-user" id="authUser" hidden>
+    <span class="auth-name" id="authName"></span>
+    <button class="auth-btn" id="btnLogout" type="button">LOGOUT</button>
+  </div>
+</div>
+
+    <nav class="nav">
+      <a href="/#top">HOME</a>
+      <a href="/#scam-types">FRAUD TYPES</a>
+      <a href="/#news">NEWS</a>
+      <a href="/map">MAP</a>
+      <a href="/trust">TRUST</a>
+      <a class="active" href="/chat">CHAT</a>
+    </nav>
+  </header>
+
+  <main class="chat-wrap">
+  <section class="chat-card" aria-label="전세사기 대처 챗봇">
+    <div class="chat-header">
+      <div class="chat-title">전세사기 대처 가이드</div>
+    </div>
+
+    <!-- ✅ 메시지 영역 -->
+    <div id="chatMessages" class="chat-messages" role="log" aria-live="polite"></div>
+
+    <!-- ✅ 퀵 버튼(1,2,3...) -->
+    <div class="chat-quick" aria-label="빠른 선택">
+  <!-- 가이드 -->
+  <button class="quick-btn" data-topic="step1">(1) 계약 전 체크</button>
+
+  <!-- ✅ 툴 연결 -->
+  <button class="quick-btn" data-action="go_trust">등기부 확인 → TRUST</button>
+  <button class="quick-btn" data-action="go_map_nearby">내 주변 매물 → MAP</button>
+  <button class="quick-btn" data-action="rtms_check">보증금 적정? → RTMS 비교</button>
+</div>
+
+
+    <!-- ✅ 입력 -->
+    <form id="chatForm" class="chat-input" autocomplete="off">
+      <input id="chatText" type="text" placeholder="예: 전입신고는 언제 해야 해?" />
+      <button type="submit">전송</button>
+    </form>
+  </section>
+</main>
+
+<script src="/chat.js"></script>
+
+<!-- =========================
+   ✅ AUTH MODAL (login/signup/forgot)
+========================= -->
+<div class="auth-backdrop" id="authBackdrop" hidden></div>
+
+<div class="auth-modal" id="authModal" role="dialog" aria-modal="true" aria-labelledby="authModalTitle" hidden>
+  <div class="auth-card">
+    <div class="auth-head">
+      <div class="auth-head-center">
+        <div class="auth-ic" aria-hidden="true">🔐</div>
+        <h3 class="auth-title" id="authModalTitle">로그인</h3>
+      </div>
+      <button class="auth-x" id="authClose" type="button" aria-label="닫기">✕</button>
+    </div>
+
+    <!-- ✅ login.html / signup.html / forgot.html 을 iframe으로 띄움 -->
+    <iframe class="auth-frame" id="authFrame" title="인증" src="about:blank"></iframe>
+  </div>
+</div>
+
+<script src="/src/auth-ui.js"></script>
+</body>
+</html>

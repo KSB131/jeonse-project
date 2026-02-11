@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>전세 매물 지도</title>
+
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- Kakao 지도 SDK -->
+  <script
+    src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=efc249573dfa6dc65318134e1cb41c4d&libraries=services"
+  ></script>
+</head>
+
+<body>
+  <header>
+    <div class="topbar">
+      <div class="brand">전세지킴단</div>
+    </div>
+
+    <nav class="nav">
+      <a href="/">HOME</a>
+      <a href="/#news">NEWS</a>
+      <a class="active" href="/map">MAP</a>
+      <a href="#">CONTACT</a>
+    </nav>
+  </header>
+
+  <div id="container">
+    <div id="sidebar">
+      <input type="text" id="address" placeholder="도로명 또는 지번 주소 입력" />
+      <button onclick="searchAddress()">지도에 표시</button>
+
+      <hr />
+      <div id="info">
+        <p>📌 마커를 클릭하면</p>
+        <p>전세사기 위험도 정보 표시 예정</p>
+      </div>
+    </div>
+
+    <div id="map"></div>
+  </div>
+
+  <!-- ✅ 반드시 map.js보다 먼저 -->
+  <script src="components.js"></script>
+  <script src="map.js"></script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+{
+  "active_model": "xgb",
+  "active_rmse": 0.26178785327647924,
+  "active_path": "C:\\Users\\rlatj\\Desktop\\자기소개서\\포트폴리오 (2)\\project\\ml\\models\\xgb_20260209.joblib",
+  "last_train_date": "20260209",
+  "all_results": {
+    "lgbm": {
+      "rmse": 4.690369870403611
+    },
+    "xgb": {
+      "rmse": 3.525603308191463
+    },
+    "cat": {
+      "rmse": 4.015175569596268
+    },
+    "stacking": {
+      "rmse": 3.8488313604744135
+    }
+  }
+}
